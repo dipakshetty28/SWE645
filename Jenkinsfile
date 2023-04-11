@@ -1,7 +1,7 @@
 pipeline {
    environment {
-        registry = "swe645docker/swe645-group-project"
-        registryCredential = 'dockerhub'
+        registryCredential = 'Docker'
+        TIMESTAMP = new Date().format("yyyyMMdd_HHmmss")
     }
    agent any
 
@@ -10,11 +10,10 @@ pipeline {
          steps {
             script{
                sh 'rm -rf *.war'
-               sh 'jar -cvf SWE-645-part2.war -C src/main/webapp/ .'
+               sh 'jar -cvf survey.war -C src/main/webapp/ .'
                //sh 'echo ${BUILD_TIMESTAMP}'
-
                docker.withRegistry('',registryCredential){
-                  def customImage = docker.build("19982707/studentsurvey645:0.1")
+                  def customImage = docker.build("dipakshetty28/swe645:${env.TIMESTAMP}")
                }
             }
          }
@@ -24,24 +23,24 @@ pipeline {
          steps {
             script{
                docker.withRegistry('',registryCredential){
-                  sh 'docker push 19982707/studentsurvey645:0.1'
+                  sh "docker push dipakshetty28/swe645:${env.TIMESTAMP}"
                }
             }
          }
       }
 
-      stage('Deploying Rancher to single pod') {
+      stage('Deploying to Rancher to single node(deployed in 3 replicas)') {
          steps {
             script{
-               sh 'kubectl set image deployment/deploymentone container-0=19982707/studentsurvey645:0.1'
+               sh "kubectl set image deployment/swe645 container-0=dipakshetty28/swe645:${env.TIMESTAMP}"
             }
          }
       }
 
-      stage('Deploying Rancher as with load balancer') {
+      stage('Deploying to Rancher using Load Balancer as a service') {
          steps {
             script{
-               sh 'kubectl set image deployment/deploymentone-lb container-0=19982707/studentsurvey645:0.1'
+               sh "kubectl set image deployment/swe645-lb container-0=dipakshetty28/swe645:${env.TIMESTAMP}"
             }
          }
       }
